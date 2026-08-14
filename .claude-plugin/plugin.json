@@ -1,0 +1,22 @@
+{
+  "name": "fable-toolkit",
+  "version": "1.0.0",
+  "description": "Run-to-completion operating mode, parallel subagent orchestration, evidence-first verification, and multi-engine team loops (Claude + Codex + Antigravity) for Claude Code.",
+  "author": {
+    "name": "Divyansh Sharma",
+    "url": "https://github.com/ddivyanshsharmaa"
+  },
+  "homepage": "https://github.com/ddivyanshsharmaa/fable-toolkit",
+  "repository": "https://github.com/ddivyanshsharmaa/fable-toolkit",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "orchestration",
+    "verification",
+    "subagents",
+    "multi-agent",
+    "codex",
+    "gemini",
+    "antigravity"
+  ]
+}

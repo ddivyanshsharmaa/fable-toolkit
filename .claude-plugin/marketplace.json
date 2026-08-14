@@ -1,0 +1,17 @@
+{
+  "name": "fable-toolkit",
+  "version": "1.0.0",
+  "description": "Marketplace for the Fable Toolkit plugin.",
+  "repository": "https://github.com/ddivyanshsharmaa/fable-toolkit",
+  "owner": {
+    "name": "Divyansh Sharma",
+    "url": "https://github.com/ddivyanshsharmaa"
+  },
+  "plugins": [
+    {
+      "name": "fable-toolkit",
+      "source": "./",
+      "description": "Six skills and four agents that make Claude Code finish the job, prove it works, and hand implementation to Codex and Antigravity when you have those subscriptions."
+    }
+  ]
+}

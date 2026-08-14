@@ -1,0 +1,13 @@
+# Run artifacts produced by the trio / duo skills inside a target project
+.trio/
+.duo/
+
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Never commit local Claude Code state
+.claude/settings.local.json
