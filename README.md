@@ -88,21 +88,33 @@ enters the context of every single session.
 | Claude + Google | `/duo-gemini` | Gemini, Flash for bulk and Pro for logic |
 | Claude only | `/orchestrate` | Claude subagents |
 
-All three loops share the same shape:
+All three loops share the same six step shape:
 
-1. **Spec.** Claude writes numbered acceptance criteria, each one checkable by a command or an
-   observation, plus explicit file boundaries.
-2. **Dispatch.** Every unit gets a cold start complete brief. If the engine would need to ask a
-   question, the brief is incomplete and the round is wasted.
-3. **Review.** Claude gathers primary evidence per criterion and records PASS or FAIL with the
-   command output that settled it.
-4. **Loop.** Failures go back with the evidence attached, up to three rounds per unit. A criterion
-   that still cannot pass is reported as failing rather than quietly loosened.
-5. **Final gate.** Claude runs the real flow end to end from a clean state over the assembled
-   result, checks that the boundaries held, and lists anything it could not verify.
+1. **Spec.** Claude writes numbered acceptance criteria, each one settled by a command it can run.
+   The skill ships a table of vague versus checkable criteria, because a criterion like "add tests"
+   invites a stub while "at least one test per exported function, each asserting on a return value"
+   forbids it in advance. It also assigns file ownership, since two engines writing the same file in
+   parallel is the most expensive failure in the loop.
+2. **Dispatch.** Every unit gets a cold start complete brief, built from the template in the skill:
+   project context, stack and conventions, files you own, files you must not touch, criteria copied
+   verbatim, how to check your own work, and an explicit demand to report failures with their real
+   error text. If the engine would need to ask a question, the brief is incomplete and the round is
+   wasted.
+3. **Review.** Claude gathers primary evidence per criterion and fills an evidence table with the
+   command it ran and the output that settled it. "The engine said it works" never fills that column.
+4. **Fix rounds.** Failures go back with the evidence attached. Escalation is structural rather than
+   repetitive: round two changes the model tier or splits the brief, round three Claude takes over,
+   and after that the criterion is reported as failing rather than quietly loosened.
+5. **Final gate.** Six mandatory checks over the assembled result: run the real flow end to end from
+   a clean state, re-run every criterion against the whole thing rather than the per unit output,
+   open every promised file at its exact path, run the neighbouring tests, confirm the boundaries
+   held, and re-read for silent shortfalls.
+6. **Report.** Outcome first, with every criterion's verdict and a mandatory list of what was not
+   verified and why.
 
 Step 5 is the one that matters most, and it is the one agent workflows usually skip. Every unit
-passing in isolation is not the same as the job working.
+passing in isolation is not the same as the job working, and integration is exactly where multi
+engine work breaks.
 
 ### Engine CLI requirements
 
