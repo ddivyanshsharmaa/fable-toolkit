@@ -16,7 +16,7 @@ what.
 
 ## Install in one line
 
-**macOS, Linux, or Git Bash on Windows**
+**macOS, Linux, WSL, or Git Bash on Windows**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ddivyanshsharmaa/fable-toolkit/main/install.sh | bash
@@ -203,12 +203,16 @@ passing in isolation is not the same as the job working.
 
 ## Requirements
 
-- Claude Code. Optional: the [Codex CLI](https://developers.openai.com/codex/cli) and the
-  [Antigravity CLI](https://antigravity.google), each signed in. Nothing here needs an API key, a
-  server, or a paid service of its own.
-- On Windows, Git Bash, which Claude Code on Windows already relies on. Engine dispatches must run
-  through it because both CLIs wait forever unless stdin is closed, and PowerShell 5.1 cannot do
-  that with `</dev/null`.
+- Claude Code, signed in with whatever account you use (subscription, API key, or a cloud
+  provider). Optional: the [Codex CLI](https://developers.openai.com/codex/cli) and the
+  [Antigravity CLI](https://antigravity.google), signed in with your own accounts. Nothing here
+  needs an API key, a server, or a paid service of its own, and nothing is tied to any one person's
+  accounts: each machine uses whatever its own tools are signed into.
+- On native Windows, [Git for Windows](https://git-scm.com/downloads/win) if you want Codex or
+  Antigravity on the team. Claude Code treats it as optional, but engine dispatches must run
+  through Git Bash because both CLIs wait forever unless stdin is closed, and PowerShell 5.1 cannot
+  do that with `</dev/null`. Without it, the team runs with Claude alone and says so. WSL needs
+  nothing extra.
 - Tested in September 2026 on Windows 11 with Claude Code 2.1.257, Codex CLI 0.155.1, and the
   Antigravity CLI. The scripts are written for macOS (bash 3.2) and Linux too, but were not run on
   those systems for this release.
@@ -219,6 +223,9 @@ passing in isolation is not the same as the job working.
   EBUSY or EPERM.** Claude Code downloaded the repository but Windows would not let it rename the
   folder, which retries do not fix. Use the PowerShell one-liner above, which installs by copying
   files instead.
+- **On Windows the team only ever uses Claude, even though you have Codex or Antigravity.** Git for
+  Windows is probably missing, so Claude Code has no Bash tool to dispatch through. Install it from
+  https://git-scm.com/downloads/win and restart Claude Code; your saved answers take over from there.
 - **Codex suddenly reports you are signed out.** Run `codex login`. One cause seen in practice: an
   IDE extension signing in with the same OpenAI account can end the CLI's session. Signing the
   extension out, or using a separate account for it, avoids the tug of war.

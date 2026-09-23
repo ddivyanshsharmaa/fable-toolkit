@@ -1,6 +1,6 @@
 {
   "name": "fable-toolkit",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Ask once and your AI team handles it: Claude plans and verifies, Codex codes and audits, Antigravity does bulk work and web research, routed automatically from the engines you use. Plus run-to-completion mode, parallel orchestration, and evidence-first verification for Claude Code.",
   "author": {
     "name": "Divyansh Sharma",

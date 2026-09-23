@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1 (2026-09-23)
+
+- Native Windows without Git for Windows is now handled. Claude Code treats Git for Windows as
+  optional, but the Codex and Antigravity loops need Git Bash to dispatch. The PowerShell installer
+  now says so plainly, and `/team` runs Claude-only on such a machine instead of trying dispatches
+  that would hang, without touching the saved engine setup.
+- The README states that nothing is tied to anyone's accounts: each machine uses whatever its own
+  tools are signed into.
+
 ## 1.2.0 (2026-09-23)
 
 ### Added

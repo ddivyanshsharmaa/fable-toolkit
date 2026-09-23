@@ -41,8 +41,11 @@ is slow to list its models). The report ends with machine readable lines:
 | `FABLE_CONFIGURED` | `yes` when the user has saved which engines they use, `no` otherwise |
 | `FABLE_FIXES` | how many setup fixes the report recommends |
 
-If bash or the script is unavailable, check by hand instead, each with stdin closed:
-`codex login status </dev/null` and `agy models </dev/null`.
+If there is no Bash tool (native Windows without Git for Windows, where Claude Code runs PowerShell
+instead), the Codex and Antigravity loops cannot run: both CLIs wait forever unless stdin is closed
+with `</dev/null`, which PowerShell 5.1 cannot do. Run the job in `solo` mode with `orchestrate`,
+and tell the user once: install Git for Windows (https://git-scm.com/downloads/win) and restart
+Claude Code, and their saved engines take over from then on. Do not change the saved setup.
 
 **The saved setup is the user's decision, and you never change it on your own.** It lives in
 `fable-toolkit.conf` in the Claude Code config folder, written by the installer or by

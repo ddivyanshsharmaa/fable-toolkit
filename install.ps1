@@ -308,6 +308,14 @@ function Install-FableToolkit {
             }
         }
 
+        if (-not $bash -and ($useCodex -eq 'yes' -or $useAgy -eq 'yes')) {
+            Write-Host ''
+            Write-Host '  Codex and Antigravity run through Git Bash, which comes with Git for Windows (free):'
+            Write-Host '  https://git-scm.com/downloads/win'
+            Write-Host '  Until it is installed the team works with Claude alone. Once it is, restart Claude Code'
+            Write-Host '  and your engines take over by themselves; nothing needs to be set up again.'
+        }
+
         Write-Host ''
         if ($configure -and (Test-Path -LiteralPath $configure) -and $bash) {
             # Both answers are passed in, so the script saves without asking again, then reports.
