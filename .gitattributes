@@ -1,0 +1,4 @@
+# Shell scripts must keep LF endings or bash on macOS and Linux fails on the stray carriage returns.
+* text=auto
+*.sh text eol=lf
+*.ps1 text eol=crlf

@@ -1,11 +1,12 @@
 ---
 name: duo-codex
 description: >-
-  Run a task through the two engine loop where Claude orchestrates, writes the spec, and reviews,
-  while Codex (`codex exec`) does all the implementation. Loops review and fix rounds until the
-  result passes every acceptance criterion, then proves the assembled result works end to end. Use
-  when the user says "duo codex", "claude and codex", "use codex for this", or "codex team". Pick
-  this over /trio when no Antigravity or Gemini subscription is available.
+  Two engine loop where Claude orchestrates, writes the spec, and reviews, while Codex
+  (`codex exec`) does all the implementation and code or security audits. Loops review and fix
+  rounds until the result passes every acceptance criterion, then proves the assembled result works
+  end to end. Usually reached through /team, which picks this loop on its own when Codex is signed
+  in and Antigravity is not. Invoke directly when the user says "duo codex", "claude and codex",
+  "use codex for this", or "codex team".
 ---
 
 # /duo-codex, the Claude and Codex loop
@@ -18,8 +19,15 @@ Codex runs on a ChatGPT subscription, so there is no per-call API key. But every
 real quota, and a vague brief burns a whole round. Brief quality is the single biggest lever you
 control.
 
-Have Antigravity too? Use **/trio** and hand the bulk work to Gemini, which is faster and cheaper
-for boilerplate. Have only Antigravity? Use **/duo-gemini**.
+Invoked directly rather than through **/team**? Run the preflight first:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../team/scripts/preflight.sh"
+```
+
+If `FABLE_MODE` comes back as anything other than `duo-codex`, switch to that loop (`trio` when
+Antigravity is also available and faster for the bulk work, `duo-gemini`, or `orchestrate` for
+`solo`) and tell the user why in one line. Never ask the user which engines they have.
 
 ## Use this when, and only when
 
@@ -43,11 +51,16 @@ Not worth it, do it yourself instead:
 | Engine | Command | Strength | Give it |
 |---|---|---|---|
 | **Claude (you)** | this session | judgment, verification | spec, decomposition, review, running the tests, final residual fixes only |
-| **Codex** | `codex exec` | precision coding | every implementation unit: features, refactors, bug fixes, tricky logic, tests, boilerplate |
+| **Codex** | `codex exec` | precision coding | every implementation unit: features, refactors, bug fixes, tricky logic, tests, boilerplate, code and security audits |
 
 Codex is your only worker, so bulk and precision work both land on it. Split bulk into several
 units rather than one giant brief: parallel sessions finish sooner, and a failed unit then costs
-one narrow re-round instead of redoing everything.
+one narrow re-round instead of redoing everything. Assign units yourself; never ask the user which
+engine should take one.
+
+Web research and audits of public web pages do not go to Codex here. Give them to this toolkit's
+`researcher` agent, which searches and fetches with Claude's own tools, and demand a source URL for
+every finding.
 
 Keep for yourself anything that needs a product decision, a taste call, or that you cannot write a
 checkable criterion for.
@@ -65,6 +78,10 @@ before them is setup for them.
   review can lean on `git diff`. If it is not a repo, list the files that will change and copy them
   into the run dir as a snapshot so you can diff manually.
 - Never run `git init` at your home directory level.
+- Read the project's own agent instructions if they exist: `CLAUDE.md`, `AGENTS.md`, and the setup
+  and deploy sections of the README. Anything a worker must respect (conventions, deploy steps,
+  files that are off limits) goes into every brief's Project context. Codex starts cold and will not
+  know it otherwise.
 
 ### 1. Spec (you)
 
@@ -105,7 +122,8 @@ cannot ask a question, and will invent anything you leave out. Use this template
 # Unit <id>: <one line goal>
 
 ## Project context
-<two or three sentences: what this project is, what already works, why this unit exists>
+<two or three sentences: what this project is, what already works, why this unit exists, plus any
+rule from the project's own CLAUDE.md or AGENTS.md that this unit must respect>
 
 ## Stack and conventions
 <language, framework, test runner, how to run things, style conventions to match>
@@ -144,8 +162,9 @@ codex exec -C "<project>" --sandbox workspace-write \
   session, which preserves its context and is far better than starting cold.
 - Dispatch all independent units **in the same message** as parallel background calls. While they
   run, build the review checklist and write the commands you will use for each criterion.
-- For a read only unit, such as an audit or "find where X happens", use `--sandbox read-only` so it
-  cannot touch the tree at all.
+- For a read only unit, such as a code review, a security audit, or "find where X happens", use
+  `--sandbox read-only` so it cannot touch the tree at all, and ask for every finding with its file
+  and line.
 
 ### 3. Review (you, and this is the point of the whole skill)
 
@@ -229,7 +248,8 @@ paths but **not** your expected answer, then reconcile its verdict with yours be
 Outcome first, in prose. Cover what was built and where, every criterion with its final verdict and
 the evidence that settled it, rounds used per unit, anything NOT verified with the reason, and
 anything you had to fix yourself after round 3, since that is a signal about the spec. The "not
-verified" section is mandatory and never empty by default.
+verified" section is mandatory and never empty by default. Add one line naming which units Codex
+handled and which ran as Claude subagents.
 
 ## Quota economy
 
@@ -243,7 +263,7 @@ Each dispatch is real spend on a subscription, so:
 - Never dispatch work you have not written a criterion for. You will not be able to tell whether it
   came back correct, which makes the spend worthless.
 
-## Gotchas, all verified live
+## Gotchas from real runs
 
 - **`codex exec` hangs forever unless stdin is closed.** Always append `</dev/null` and run it
   through the **Bash tool**. On Windows, PowerShell 5.1 has no `<` redirect, so the Bash tool is
@@ -256,6 +276,12 @@ Each dispatch is real spend on a subscription, so:
 - Codex's own sandbox often cannot run Python or your test suite, and it will honestly report that
   it could not verify. That is expected. Running the tests is your job as reviewer, not grounds for
   a fix round.
+- On Windows, Codex can fail every command with `SetTokenInformation(TokenDefaultDacl) failed:
+  1344` when its sandbox cannot start inside the calling shell. `--sandbox read-only` units still
+  work. For a write unit that hits it, an untested but low risk fallback: run it read-only, ask for
+  the change as a unified diff in the final message, and apply that diff yourself with `git apply`.
+- Codex uses whatever model its own config names (for example `gpt-5.6-sol` in September 2026).
+  Leave it alone unless a unit clearly needs another; `-m <model>` overrides it per dispatch.
 - Never put secrets or credentials in a brief. Briefs go to an external service.
 - Engines can silently do less than asked, skipping a file or stubbing a test. The review step
   exists because of this. Check every criterion, never a sample.

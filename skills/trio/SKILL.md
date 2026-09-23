@@ -1,11 +1,12 @@
 ---
 name: trio
 description: >-
-  Run a task through the three engine AI team. Claude orchestrates, writes the spec, and reviews;
-  Codex does the precision coding; Antigravity (Gemini) does heavy and bulk work. Loops review and
-  fix rounds until the result passes every acceptance criterion, then proves the assembled result
-  works end to end. Use when the user says "trio", "ai team", "the team", "use codex and
-  antigravity", "full team on this", or wants multiple AI engines collaborating on one job.
+  Three engine loop. Claude orchestrates, writes the spec, and reviews; Codex does precision coding
+  and code or security audits; Antigravity (Gemini) does bulk work, long generation, and web
+  research. Loops review and fix rounds until every acceptance criterion passes, then proves the
+  assembled result works end to end. Usually reached through /team, which picks this loop on its
+  own when both engines are signed in. Invoke directly when the user says "trio", "use codex and
+  antigravity", or "full team on this".
 ---
 
 # /trio, the three engine team loop
@@ -19,8 +20,15 @@ All three engines run on subscriptions, so there is no per-call API key. But eve
 real quota, and a vague brief burns a whole round. Brief quality is the single biggest lever you
 control.
 
-Only have two of the three engines? Use **/duo-codex** (Claude + Codex) or **/duo-gemini**
-(Claude + Antigravity) instead.
+Invoked directly rather than through **/team**? Run the preflight first:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../team/scripts/preflight.sh"
+```
+
+If `FABLE_MODE` comes back as anything other than `trio`, switch to that loop (`duo-codex`,
+`duo-gemini`, or `orchestrate` for `solo`) and tell the user why in one line. Never ask the user
+which engines they have. Keep the `FABLE_AGY_*` model ids for the dispatches below.
 
 ## Use this when, and only when
 
@@ -43,17 +51,21 @@ Not worth it, do it yourself instead:
 | Engine | Command | Strength | Give it |
 |---|---|---|---|
 | **Claude (you)** | this session | judgment, verification | spec, decomposition, review, running the tests, final residual fixes only |
-| **Codex** | `codex exec` | precision coding | features, refactors, bug fixes, tricky logic, real tests |
-| **Antigravity** (Gemini) | `agy -p` | fast bulk work | boilerplate, docs, data transforms, long generated content, repetitive multi file edits |
+| **Codex** | `codex exec` | precision coding | features, refactors, bug fixes, tricky logic, real tests, code and security audits |
+| **Antigravity** (Gemini) | `agy -p` | fast bulk work | boilerplate, docs, data transforms, long generated content, repetitive multi file edits, web research, content and SEO audits |
 
-Assigning a unit is a judgment call, so use the signal, not the file count:
+Assigning a unit is a judgment call, so use the signal, not the file count. Decide it yourself;
+never ask the user which engine should take a unit.
 
 | Signal in the unit | Send it to |
 |---|---|
 | Correctness is subtle, edge cases decide it | Codex |
 | Must read existing code and match its patterns | Codex |
-| Same mechanical change across many files | Antigravity |
-| Long generated prose, data, or config | Antigravity |
+| Code review or security audit of a repository | Codex, with `--sandbox read-only` |
+| Same mechanical change across many files | Antigravity, fast tier |
+| Long generated prose, data, or config | Antigravity, heavy tier |
+| Web research, competitor scan, SEO or content audit of public pages | Antigravity, fast tier |
+| Reading or summarising many local files you name in the brief | Antigravity, fast tier |
 | Needs a product decision or a taste call | Keep it yourself |
 | You cannot write a checkable criterion for it | Keep it yourself |
 
@@ -70,6 +82,11 @@ before them is setup for them.
   review can lean on `git diff`. If it is not a repo, list the files that will change and copy them
   into the run dir as a snapshot so you can diff manually.
 - Never run `git init` at your home directory level.
+- Read the project's own agent instructions if they exist: `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`,
+  and the setup and deploy sections of the README. Anything a worker must respect (conventions,
+  deploy steps, files that are off limits) goes into every brief's Project context. The engines
+  start cold and do not reliably find these files themselves; Antigravity, for one, only reads an
+  `AGENTS.md` at the root of a folder it was launched in or given with `--add-dir`.
 
 ### 1. Spec (you)
 
@@ -110,7 +127,8 @@ conversation, cannot ask a question, and will invent anything you leave out. Use
 # Unit <id>: <one line goal>
 
 ## Project context
-<two or three sentences: what this project is, what already works, why this unit exists>
+<two or three sentences: what this project is, what already works, why this unit exists, plus any
+rule from the project's own CLAUDE.md or AGENTS.md that this unit must respect>
 
 ## Stack and conventions
 <language, framework, test runner, how to run things, style conventions to match>
@@ -150,15 +168,27 @@ codex exec -C "<project>" --sandbox workspace-write \
 Capture the `session id` line Codex prints and record it in the run dir. Fix rounds resume that
 session, which preserves its context and is far better than starting cold.
 
+For a code review or security audit, use `--sandbox read-only` so Codex cannot touch the tree, and
+ask for every finding with its file and line.
+
 Antigravity (bulk work; it ignores the shell's working directory, so `--add-dir` **and** absolute
 paths inside the brief are both mandatory):
 
 ```bash
 agy -p "$(cat "<rundir>/brief-u2.md")" \
-  --model "Gemini 3.5 Flash (Medium)" --mode accept-edits \
+  --model "<FABLE_AGY_FAST from the preflight>" --mode accept-edits \
   --add-dir "<project-abs-path>" \
   --print-timeout 15m </dev/null > "<rundir>/agy-u2-round1.md" 2>&1
 ```
+
+Pick the model id from the preflight by what the unit needs: `FABLE_AGY_FAST` for bulk and
+mechanical work (in September 2026 that is `gemini-3.8-flash-medium`), `FABLE_AGY_HEAVY` for long
+generation (`gemini-3.8-flash-high`), and `FABLE_AGY_SMART` for logic and escalation
+(`gemini-3.1-pro-high`). The preflight reads them live from `agy models`, so newer models are
+picked up without editing this skill. The short id works in `--model` and avoids quoting trouble.
+
+A research or audit unit that only reports findings does not need `--mode accept-edits`; its answer
+lands in the output file. Antigravity searches the web and fetches pages on its own in this mode.
 
 Dispatch all independent units **in the same message** as parallel background calls. While they
 run, do not idle: build the review checklist, write the commands you will use for each criterion,
@@ -202,7 +232,7 @@ Escalate structurally, not by repetition:
 | Round | If it still fails |
 |---|---|
 | 1 | Fix brief with evidence to the same engine and session. |
-| 2 | Change something real. Move the Antigravity unit to `--model "Gemini 3.1 Pro (High)"`, or split the Codex unit into two narrower briefs, or add the context the engine clearly lacked. Reassigning an Antigravity unit to Codex is fair game here. |
+| 2 | Change something real. Move the Antigravity unit to the smart tier (`FABLE_AGY_SMART`), or split the Codex unit into two narrower briefs, or add the context the engine clearly lacked. Reassigning an Antigravity unit to Codex is fair game here. |
 | 3 | Take it yourself and fix the residual. |
 | after 3 | Report the criterion as failing. |
 
@@ -252,6 +282,7 @@ Outcome first, in prose. Cover:
 - Rounds used per unit, and what each engine actually did.
 - Anything NOT verified, with the reason. This section is mandatory and never empty by default.
 - Anything you had to fix yourself after round 3, since that is a signal about the spec.
+- One line naming which engine handled which units.
 
 The user should not need to know how many dispatches ran or what the units were called.
 
@@ -263,11 +294,11 @@ Each dispatch is real spend on a subscription, so:
 - Batch small related work into one unit rather than five tiny dispatches.
 - Re-read a brief before sending it. Most wasted rounds trace to a missing path or an unstated
   convention, not to engine weakness.
-- For a logic heavy unit, one `"Gemini 3.1 Pro (High)"` dispatch usually beats three Flash retries.
+- For a logic heavy unit, one smart tier dispatch usually beats three Flash retries.
 - Never dispatch work you have not written a criterion for. You will not be able to tell whether it
   came back correct, which makes the spend worthless.
 
-## Gotchas, all verified live
+## Gotchas from real runs
 
 - **Both CLIs hang forever unless stdin is closed.** Always append `</dev/null` and run them through
   the **Bash tool**. On Windows, PowerShell 5.1 has no `<` redirect, so the Bash tool is mandatory
@@ -276,8 +307,15 @@ Each dispatch is real spend on a subscription, so:
   inside a sandboxed shell. Rerun it unsandboxed.
 - `agy` print mode times out at 5m by default. Set `--print-timeout 15m` for real work, and longer
   for big generation jobs.
-- `agy models` lists the available models. Names go verbatim into `--model`, for example
-  `"Gemini 3.5 Flash (Medium)"` and `"Gemini 3.1 Pro (High)"`.
+- `agy models` lists the models your account can use. The first column, the short id such as
+  `gemini-3.8-flash-medium`, works in `--model`.
+- **`agy -p` cannot run shell commands.** Headless mode auto denies anything that needs its
+  `command` permission, and editing Antigravity's settings does not change that. It can still read
+  and write files, search the web, and fetch pages. So run any command yourself first, save the
+  output to files, name those files in the brief, and tell it not to run shell or terminal
+  commands.
+- `agy` sometimes writes its deliverable and then trips that permission error on a trailing self
+  check. A log ending in the error is not proof of failure; check the output path first.
 - `agy` needs `--mode accept-edits` to write files at all. Without it you get a plan, not a change.
 - Redirect both streams from `agy` with `> file 2>&1`. Useful diagnostics go to stderr, and without
   it a silent failure looks identical to an empty success.
@@ -287,6 +325,10 @@ Each dispatch is real spend on a subscription, so:
 - Codex's own sandbox often cannot run Python or your test suite, and it will honestly report that
   it could not verify. That is expected. Running the tests is your job as reviewer, not grounds for
   a fix round.
+- On Windows, Codex can fail every command with `SetTokenInformation(TokenDefaultDacl) failed:
+  1344` when its sandbox cannot start inside the calling shell. `--sandbox read-only` units still
+  work. For a write unit that hits it, an untested but low risk fallback: run it read-only, ask for
+  the change as a unified diff in the final message, and apply that diff yourself with `git apply`.
 - Never put secrets or credentials in a brief. Briefs go to external services.
 - Engines can silently do less than asked, skipping a file or stubbing a test. The review step
   exists because of this. Check every criterion, never a sample.

@@ -1,12 +1,12 @@
 ---
 name: duo-gemini
 description: >-
-  Run a task through the two engine loop where Claude orchestrates, writes the spec, and reviews,
-  while Antigravity (`agy -p`, Gemini models) does all the implementation and bulk generation.
-  Loops review and fix rounds until the result passes every acceptance criterion, then proves the
-  assembled result works end to end. Use when the user says "duo gemini", "claude and antigravity",
-  "claude and agy", or "use gemini for this". Pick this over /trio when no Codex subscription is
-  available.
+  Two engine loop where Claude orchestrates, writes the spec, and reviews, while Antigravity
+  (`agy -p`, Gemini models) does the implementation, bulk generation, web research, and content or
+  SEO audits. Loops review and fix rounds until the result passes every acceptance criterion, then
+  proves the assembled result works end to end. Usually reached through /team, which picks this
+  loop on its own when Antigravity is signed in and Codex is not. Invoke directly when the user
+  says "duo gemini", "claude and antigravity", "claude and agy", or "use gemini for this".
 ---
 
 # /duo-gemini, the Claude and Antigravity loop
@@ -19,8 +19,16 @@ Antigravity runs on a Google subscription, so there is no per-call API key, and 
 comparatively cheap. Briefs still have to be complete: Gemini fills gaps with plausible invention
 rather than stopping to ask, and a confident wrong answer costs more to detect than a refusal.
 
-Have Codex too? Use **/trio** and send the tricky logic to Codex while Gemini takes the bulk. Have
-only Codex? Use **/duo-codex**.
+Invoked directly rather than through **/team**? Run the preflight first:
+
+```bash
+bash "${CLAUDE_SKILL_DIR}/../team/scripts/preflight.sh"
+```
+
+If `FABLE_MODE` comes back as anything other than `duo-gemini`, switch to that loop (`trio` when
+Codex is also available for the tricky logic, `duo-codex`, or `orchestrate` for `solo`) and tell
+the user why in one line. Never ask the user which engines they have. Keep the `FABLE_AGY_*` model
+ids; the tiers below use them.
 
 ## Use this when, and only when
 
@@ -44,16 +52,24 @@ Not worth it, do it yourself instead:
 | Engine | Command | Strength | Give it |
 |---|---|---|---|
 | **Claude (you)** | this session | judgment, verification | spec, decomposition, review, running the tests, final residual fixes only |
-| **Antigravity** (Gemini) | `agy -p` | fast bulk work, long generation | boilerplate, docs, data transforms, repetitive multi file edits, long generated content |
+| **Antigravity** (Gemini) | `agy -p` | fast bulk work, long generation | boilerplate, docs, data transforms, repetitive multi file edits, long generated content, web research, content and SEO audits |
 
-**Model tiering matters more here than in /trio**, because Gemini is your only worker:
+**Model tiering matters more here than in /trio**, because Gemini is your only worker. The
+preflight reads the tiers live from `agy models`, so newer models are picked up on their own:
 
-| Tier | Use for |
-|---|---|
-| `"Gemini 3.5 Flash (Medium)"` | Default. Boilerplate, docs, mechanical edits, content generation. |
-| `"Gemini 3.1 Pro (High)"` | Slower and smarter. Use it up front for tricky logic, algorithms, and anything with subtle correctness requirements, and as the escalation when a Flash unit fails twice. |
+| Tier | Preflight line | In September 2026 | Use for |
+|---|---|---|---|
+| Fast | `FABLE_AGY_FAST` | `gemini-3.8-flash-medium` | Default. Boilerplate, docs, mechanical edits, web research. |
+| Heavy | `FABLE_AGY_HEAVY` | `gemini-3.8-flash-high` | Long generation, where drift and truncation are the risk. |
+| Smart | `FABLE_AGY_SMART` | `gemini-3.1-pro-high` | Tricky logic, algorithms, subtle correctness, code or security review, and the escalation when a Flash unit fails twice. |
 
-Run `agy models` to confirm the exact names available to you. They go verbatim into `--model`.
+The short id goes straight into `--model`. Antigravity also offers Claude and GPT-OSS models; stay
+on the Gemini tiers here, because Claude already orchestrates and reviews, and the point of the
+team is a second model family's work.
+
+Assign units yourself; never ask the user which tier or engine should take one. A code review or
+security audit goes to the smart tier, and your own review pass then checks every finding against
+the code.
 
 Keep for yourself anything that needs a product decision, a taste call, or that you cannot write a
 checkable criterion for.
@@ -71,6 +87,14 @@ before them is setup for them.
   review can lean on `git diff`. If it is not a repo, list the files that will change and copy them
   into the run dir as a snapshot so you can diff manually.
 - Never run `git init` at your home directory level.
+- Read the project's own agent instructions if they exist: `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`,
+  and the setup and deploy sections of the README. Anything a worker must respect (conventions,
+  deploy steps, files that are off limits) goes into every brief's Project context. Antigravity
+  only reads an `AGENTS.md` at the root of a folder it was launched in or given with `--add-dir`,
+  so do not count on it finding the rest.
+- If a unit needs the output of a shell command (a crawl, a test run, a `git log`, an API call),
+  run it yourself now and save the output as files for the brief. Headless Antigravity cannot run
+  shell commands.
 
 ### 1. Spec (you)
 
@@ -112,7 +136,8 @@ Use this template:
 # Unit <id>: <one line goal>
 
 ## Project context
-<two or three sentences: what this project is, what already works, why this unit exists>
+<two or three sentences: what this project is, what already works, why this unit exists, plus any
+rule from the project's own CLAUDE.md or AGENTS.md that this unit must respect>
 
 ## Stack and conventions
 <language, framework, test runner, how to run things, style conventions to match>
@@ -143,10 +168,14 @@ Do not summarise around a failure. A disclosed failure is cheap to fix; a hidden
 
 ```bash
 agy -p "$(cat "<rundir>/brief-u1.md")" \
-  --model "Gemini 3.5 Flash (Medium)" --mode accept-edits \
+  --model "<FABLE_AGY_FAST, or the tier the unit needs>" --mode accept-edits \
   --add-dir "<project-abs-path>" \
   --print-timeout 15m </dev/null > "<rundir>/agy-u1-round1.md" 2>&1
 ```
+
+A research or audit unit that only reports findings does not need `--mode accept-edits`; its answer
+lands in the output file. Antigravity searches the web and fetches pages on its own in this mode.
+Demand a source URL for every finding, and check at least three of them yourself in review.
 
 **The single most common failure is files landing in the wrong place.** `agy` ignores the shell's
 working directory. Without `--add-dir <project>` **and** absolute paths written inside the brief, it
@@ -191,8 +220,8 @@ Escalate structurally, not by repetition:
 
 | Round | If it still fails |
 |---|---|
-| 1 | Fix brief with evidence, fresh Flash dispatch. |
-| 2 | Move the unit to `--model "Gemini 3.1 Pro (High)"`, or split it into smaller units when the failure is drift or truncation rather than logic. |
+| 1 | Fix brief with evidence, fresh dispatch on the same tier. |
+| 2 | Move the unit to the smart tier (`FABLE_AGY_SMART`), or split it into smaller units when the failure is drift or truncation rather than logic. |
 | 3 | Take it yourself and fix the residual. |
 | after 3 | Report the criterion as failing. |
 
@@ -239,20 +268,21 @@ paths but **not** your expected answer, then reconcile its verdict with yours be
 Outcome first, in prose. Cover what was built and where, every criterion with its final verdict and
 the evidence that settled it, rounds used and which model tier each unit ended on, anything NOT
 verified with the reason, and anything you had to fix yourself after round 3, since that is a signal
-about the spec. The "not verified" section is mandatory and never empty by default.
+about the spec. The "not verified" section is mandatory and never empty by default. Add one line
+naming which units Antigravity handled and on which tier.
 
 ## Quota economy
 
 Rounds are cheap here, but attention is not:
 
 - One dispatch per unit per round. No "just checking in" follow ups.
-- For a logic heavy unit, one Pro dispatch usually beats three Flash retries.
+- For a logic heavy unit, one smart tier dispatch usually beats three Flash retries.
 - Split long generation jobs by count rather than pushing one huge brief. Drift and truncation both
   scale with output length.
 - Never dispatch work you have not written a criterion for. You will not be able to tell whether it
   came back correct, which makes the round worthless.
 
-## Gotchas, all verified live
+## Gotchas from real runs
 
 - **`agy` hangs forever unless stdin is closed.** Always append `</dev/null` and run it through the
   **Bash tool**. On Windows, PowerShell 5.1 has no `<` redirect, so the Bash tool is mandatory
@@ -264,9 +294,16 @@ Rounds are cheap here, but attention is not:
 - It needs network. If a dispatch produces no output for about two minutes, it is probably running
   inside a sandboxed shell. Rerun it unsandboxed.
 - `--mode accept-edits` is what lets it write files. Without it you get a plan, not a change.
+- **`agy -p` cannot run shell commands.** Headless mode auto denies anything that needs its
+  `command` permission, and editing Antigravity's settings does not change that. It can still read
+  and write files, search the web, and fetch pages. Stage command output as files, name them in the
+  brief, and tell it not to run shell or terminal commands.
+- It sometimes writes its deliverable and then trips that permission error on a trailing self check.
+  A log ending in the error is not proof of failure; check the output path first.
 - Redirect both streams with `> file 2>&1`. Useful diagnostics go to stderr, and without it a silent
   failure looks identical to an empty success.
-- `agy models` lists the available models. Names go verbatim into `--model`.
+- `agy models` lists the models your account can use. The first column, the short id, works in
+  `--model`.
 - Never put secrets or credentials in a brief. Briefs go to an external service.
 - Engines can silently do less than asked, skipping a file or stubbing a test. The review step
   exists because of this. Check every criterion, never a sample.
