@@ -4,7 +4,7 @@ Seven skills and four agents for [Claude Code](https://claude.com/claude-code) t
 one behaviour: **finish the job, then prove it works.**
 
 Most agent failures are not intelligence failures. They are process failures. The model stops
-half way to ask a question nobody is there to answer, or it writes a file and calls that "done",
+halfway to ask a question nobody is there to answer, or it writes a file and calls that "done",
 or it fans work out to subagents and repeats their optimistic summaries without checking any of
 them. This toolkit is the process that closes those gaps, written as skills so Claude Code loads
 it automatically when the situation calls for it.
