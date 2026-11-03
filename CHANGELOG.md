@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Account sign-in loop (`skills/team/scripts/accounts.sh`). The installer now offers to sign you in
+  to Claude Code, Codex, Antigravity and DeepSeek accounts, asking again after each one until you
+  type `done`, with any number of accounts per service. Claude Code and Codex accounts get their own
+  folders so several can be signed in at once. Skip with `FABLE_TOOLKIT_ACCOUNTS=no`.
+
 ## 1.2.1 (2026-09-23)
 
 - Native Windows without Git for Windows is now handled. Claude Code treats Git for Windows as

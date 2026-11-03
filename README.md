@@ -97,6 +97,28 @@ bash ~/.claude/skills/team/scripts/configure.sh --codex yes --agy no   # no ques
 For unattended installs, answer in advance with `FABLE_TOOLKIT_CODEX=yes|no` and
 `FABLE_TOOLKIT_AGY=yes|no` in front of the install command.
 
+## Signing in to your accounts
+
+At the end of the install it offers to sign you in. It asks which service (Claude Code, Codex,
+Antigravity or DeepSeek), signs you in, then asks again, **until you type `done`**. Add as many
+accounts as you like, including several of the same service. Run it any time:
+
+```bash
+bash ~/.claude/skills/team/scripts/accounts.sh          # sign in to more accounts
+bash ~/.claude/skills/team/scripts/accounts.sh --list   # show what is saved
+```
+
+| Service | How it signs in |
+| --- | --- |
+| Claude Code | `claude auth login` prints a sign-in web address. Each account gets its own folder, started with `CLAUDE_CONFIG_DIR=<folder> claude`. |
+| Codex | `codex login` prints a sign-in web address. Each account gets its own folder, started with `CODEX_HOME=<folder> codex`. |
+| Antigravity | `agy` has no login command; it asks you to sign in the first time you start it. It keeps one account per computer user, so the script cannot switch between several. |
+| DeepSeek | There is no sign-in link, only an API key from <https://platform.deepseek.com/api_keys> (DeepSeek bills API use). The key is saved in a file in `~/.fable-accounts`. |
+
+The list lives in `~/.fable-accounts/accounts.conf`. This only signs you in and remembers the
+accounts: the team keeps using your normal sign-ins unless you start a tool with one of the
+commands above. Skip it in unattended installs with `FABLE_TOOLKIT_ACCOUNTS=no`.
+
 ## Setup check
 
 Every team run starts with a quick read-only check. It reports what it found and what would remove

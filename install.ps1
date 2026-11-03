@@ -320,6 +320,14 @@ function Install-FableToolkit {
         if ($configure -and (Test-Path -LiteralPath $configure) -and $bash) {
             # Both answers are passed in, so the script saves without asking again, then reports.
             & $bash $configure --codex $useCodex --agy $useAgy 2>$null | ForEach-Object { Write-Host $_ }
+
+            # Then offer to sign in to accounts, as many as they like, until they type done.
+            # FABLE_TOOLKIT_ACCOUNTS=no skips it (unattended installs).
+            $accounts = Join-Path (Split-Path $configure) 'accounts.sh'
+            if ($env:FABLE_TOOLKIT_ACCOUNTS -ne 'no' -and (Test-Path -LiteralPath $accounts)) {
+                Write-Host ''
+                & $bash $accounts --ask-first
+            }
         }
         else {
             # No Git Bash: save the same file directly. UTF-8 without a byte order mark and LF line

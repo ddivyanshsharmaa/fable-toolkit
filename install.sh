@@ -14,6 +14,7 @@
 #   FABLE_TOOLKIT_SRC=<folder>       install from a local checkout instead of GitHub
 #   FABLE_TOOLKIT_CODEX=yes|no       answer the Codex question in advance (unattended installs)
 #   FABLE_TOOLKIT_AGY=yes|no         answer the Antigravity question in advance
+#   FABLE_TOOLKIT_ACCOUNTS=no        skip the account sign-in loop at the end
 #   CLAUDE_CONFIG_DIR                respected, same as Claude Code itself
 #
 # At the end it asks three questions (Claude Code, Codex, Antigravity), saves the answers, and
@@ -239,6 +240,13 @@ run_setup() {
   say ""
   if [ -n "$script" ] && [ -f "$script" ]; then
     bash "$script" || true
+    # Then offer to sign in to accounts, as many as they like, until they type done.
+    # FABLE_TOOLKIT_ACCOUNTS=no skips it (unattended installs).
+    accounts="$(dirname "$script")/accounts.sh"
+    if [ "${FABLE_TOOLKIT_ACCOUNTS:-}" != no ] && [ -f "$accounts" ]; then
+      say ""
+      bash "$accounts" --ask-first || true
+    fi
   else
     say "Claude Code asks which engines you use the first time you ask it to use the team."
   fi
