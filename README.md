@@ -1,4 +1,20 @@
-# Fable Toolkit
+<div align="center">
+
+# 🧭 Fable Toolkit
+
+**Skills and agents for Claude Code that finish the job, then prove it works.**
+Seven skills and four agents, plus team loops that hand work to Codex or Antigravity while Claude plans, reviews and verifies. One-line install.
+
+[![License](https://img.shields.io/github/license/ddivyanshsharmaa/fable-toolkit?style=flat-square)](LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/ddivyanshsharmaa/fable-toolkit?style=flat-square)](https://github.com/ddivyanshsharmaa/fable-toolkit/commits)
+[![Stars](https://img.shields.io/github/stars/ddivyanshsharmaa/fable-toolkit?style=flat-square)](https://github.com/ddivyanshsharmaa/fable-toolkit/stargazers)
+![Works with](https://img.shields.io/badge/Claude%20Code%20%7C%20Codex%20%7C%20Antigravity-skills-7c5cff?style=flat-square)
+
+<img src="docs/social-preview.png" alt="Fable Toolkit: Skills and agents for Claude Code that finish the job, then prove it works." width="760">
+
+[Install](#install-in-one-line) · [Use it](#use-it) · [Who does what](#who-does-what) · [Troubleshooting](#troubleshooting)
+
+</div>
 
 Seven skills and four agents for [Claude Code](https://claude.com/claude-code) that push it toward
 one behaviour: **finish the job, then prove it works.**
@@ -306,3 +322,7 @@ a set of markdown instructions and small scripts that drive them.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+---
+
+If this saved you time, a ⭐ on the repo helps other people find it.
