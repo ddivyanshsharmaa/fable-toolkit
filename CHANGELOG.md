@@ -2,10 +2,14 @@
 
 ## Unreleased
 
-- Account sign-in loop (`skills/team/scripts/accounts.sh`). The installer now offers to sign you in
-  to Claude Code, Codex, Antigravity and DeepSeek accounts, asking again after each one until you
-  type `done`, with any number of accounts per service. Claude Code and Codex accounts get their own
-  folders so several can be signed in at once. Skip with `FABLE_TOOLKIT_ACCOUNTS=no`.
+- Account sign-in loop (`skills/team/scripts/accounts.sh`). The installer offers to sign you in to 15
+  popular services (Claude Code, Codex, Grok, Antigravity, Gemini CLI, Qwen Code, Kimi, Copilot CLI,
+  Cursor Agent, DeepSeek, OpenRouter, Groq, Mistral, Z.ai, Together AI) plus any other API-key
+  service, asking again after each one until you type `done`. Each account saves an email or ID.
+  Claude Code, Codex and Grok accounts get their own folders. Sign-ins are checked with the
+  credential environment variables removed, so a stray API key cannot pass for a sign-in. Adds
+  `--list` and `--remove`. It only signs you in and keeps a list; the team does not read the list
+  yet. Skip with `FABLE_TOOLKIT_ACCOUNTS=no`.
 
 ## 1.2.1 (2026-09-23)
 

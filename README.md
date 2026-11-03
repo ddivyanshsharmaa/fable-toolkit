@@ -99,25 +99,37 @@ For unattended installs, answer in advance with `FABLE_TOOLKIT_CODEX=yes|no` and
 
 ## Signing in to your accounts
 
-At the end of the install it offers to sign you in. It asks which service (Claude Code, Codex,
-Antigravity or DeepSeek), signs you in, then asks again, **until you type `done`**. Add as many
-accounts as you like, including several of the same service. Run it any time:
+At the end of the install it offers to sign you in. It lists 15 popular services, signs you in to
+the one you pick, saves the account (with the email or ID you give, so you can tell accounts apart),
+then asks again, **until you type `done`**. Add as many accounts as you like, including several of
+the same service.
 
 ```bash
-bash ~/.claude/skills/team/scripts/accounts.sh          # sign in to more accounts
-bash ~/.claude/skills/team/scripts/accounts.sh --list   # show what is saved
+bash ~/.fable-accounts/accounts.sh                    # add more accounts (a copy is kept here after the first run)
+bash ~/.fable-accounts/accounts.sh --list             # show what is saved and how to use each
+bash ~/.fable-accounts/accounts.sh --remove deepseek work   # forget one (deletes its saved key file)
 ```
 
-| Service | How it signs in |
-| --- | --- |
-| Claude Code | `claude auth login` prints a sign-in web address. Each account gets its own folder, started with `CLAUDE_CONFIG_DIR=<folder> claude`. |
-| Codex | `codex login` prints a sign-in web address. Each account gets its own folder, started with `CODEX_HOME=<folder> codex`. |
-| Antigravity | `agy` has no login command; it asks you to sign in the first time you start it. It keeps one account per computer user, so the script cannot switch between several. |
-| DeepSeek | There is no sign-in link, only an API key from <https://platform.deepseek.com/api_keys> (DeepSeek bills API use). The key is saved in a file in `~/.fable-accounts`. |
+| Kind | Services | What happens |
+| --- | --- | --- |
+| Sign-in link | Claude Code, Codex, Grok | The tool prints a web address (`claude auth login`, `codex login`, `grok login`). Each account gets its own folder, so several can be signed in at once. The check afterwards confirms the sign-in really worked. Codex and Grok offer a device-code option for machines without a browser. |
+| First run | Antigravity (agy), Gemini CLI, Qwen Code, Kimi, GitHub Copilot CLI, Cursor Agent | You sign in the first time you run the tool. Fable Toolkit does not run or check that step; it only notes the account. These tools keep one signed-in account per computer user. |
+| API key | DeepSeek, OpenRouter, Groq, Mistral, Z.ai, Together AI, or any other | You create a key on the provider's website and paste it (nothing shows while you type). It is saved in a file only you can read (owner-only on macOS and Linux; on Windows it sits in your user folder). Providers bill API use to your account. |
 
-The list lives in `~/.fable-accounts/accounts.conf`. This only signs you in and remembers the
-accounts: the team keeps using your normal sign-ins unless you start a tool with one of the
-commands above. Skip it in unattended installs with `FABLE_TOOLKIT_ACCOUNTS=no`.
+The list is in `~/.fable-accounts/accounts.conf`. Each entry has the exact command to use that
+account, for example `CLAUDE_CONFIG_DIR=... claude`. A new Claude or Codex folder starts empty: it
+has none of your settings or this toolkit's skills.
+
+**What this does not do yet:** the team does not read this list. It signs you in and keeps your
+accounts in one tidy place; it is not an automatic account switcher. A lead Claude Code session also
+cannot hand itself over to another account when it hits its limit.
+
+**A note on terms.** Use separate accounts for separate purposes, such as work and personal.
+Automatically rotating several personal subscriptions of the same provider to get past usage limits
+may break that provider's terms, so this toolkit does not do it. Moving work between *different*
+engines, or to an API key, is fine.
+
+Skip the offer in unattended installs with `FABLE_TOOLKIT_ACCOUNTS=no`.
 
 ## Setup check
 
